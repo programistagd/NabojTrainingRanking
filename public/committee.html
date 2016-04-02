@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Naboj Trening</title>
+    <link rel="stylesheet" href="/bootstrap.min.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/jquery-1.11.1.min.js"></script>
+    <script src="/progressbar.min.js"></script>
+    <script src="/bootstrap.min.js"></script>
+    <style>
+    .glyphicon.spinning {
+        animation: spin 1s infinite linear;
+        -webkit-animation: spin2 1s infinite linear;
+    }
+
+    @keyframes spin {
+        from { transform: scale(1) rotate(0deg); }
+        to { transform: scale(1) rotate(360deg); }
+    }
+
+    @-webkit-keyframes spin2 {
+        from { -webkit-transform: rotate(0deg); }
+        to { -webkit-transform: rotate(360deg); }
+    }
+    </style>
+  </head>
+  <body style="margin: 20pt;">
+    <div>
+      <form class="form">
+        <select id="teams">
+        </select>
+        <input type="text" value="1" id="taskid">
+        <button class="btn btn-success" id="accept">Akceptuj</button>
+        <button class="btn btn-danger" id="cancel">Odwołaj</button>
+        <span id="info">Łączenie z serwerem <span class="glyphicon glyphicon-refresh spinning"></span></div>
+      </form>
+    </div>
+    <script>
+      var socket = io();
+      var teams = [];
+      function message(text, done){
+        var spinner = '<span class="glyphicon glyphicon-refresh spinning"></span>';
+        var tick = '<span class="glyphicon glyphicon-ok" style="color:green;"></span>';
+        if(done) text+=tick;
+        else text+=spinner;
+        $("#info").html(text);
+      }
+      function fail(text){
+        $("#info").html(text+' <span class="glyphicon glyphicon-remove" style="color:red;"></span>');
+      }
+      socket.on('init', function(msg){
+        duration = msg.duration*1000;
+        startDate = msg.startTime;
+        teams = msg.teams;
+        $('#teams').find('option').remove();
+        for(var i=0;i<teams.length;++i){
+          var team = teams[i];
+          console.log(team);
+          addTeam(team);
+        }
+        message("Połączono",true);
+      });
+      socket.on('error',function(){
+        fail("Błąd połączenia");
+      });
+      socket.on('update_error',function(e){
+        fail("Błąd przy aktualizacji zadania! ("+e+")");
+      });
+      socket.on('update_success',function(u){
+        var id = parseInt(u.id);
+        message((u.state==2?"Potwierdzono ":"Odwołano ")+"zadanie "+u.task+" drużyny "+teams[id].name+" ("+id+")",true);
+      });
+      $("#accept").click(function(){
+        var team = $("#teams").val();
+        var task = parseInt($("#taskid").val());
+        update(team,task,2);
+        return false;
+      });
+      $("#cancel").click(function(){
+        var team = parseInt($("#teams").val());
+        var task = parseInt($("#taskid").val());
+        update(team,task,0);
+        return false;
+      });
+      function update(team,task,state){
+        message((state==2?"Potwierdzanie ":"Anulowanie ")+"zadania "+task+" drużyny "+teams[team].name+" ("+team+")",false);
+        socket.emit('update',{id:team,task:task,state:state});
+      }
+      function addTeam(team){
+        $('#teams')
+        .append($("<option></option>")
+        .attr("value",team.id)
+        .text(team.name));
+      }
+    </script>
+  </body>
+</html>
