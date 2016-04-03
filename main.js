@@ -2,11 +2,15 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-//TODO load config!
-var taskamount = 50;
-var duration = 2*60*60;
-var startTime = (new Date()).getTime()+10*60*1000;
-var teams = [{name:"FC Barcelona"},{name:"Real Madryt"},{name:"Chicago Bulls"}];
+var config = require('./config.json')
+
+var taskamount = config.taskAmount;
+var duration = config.duration;
+var startTime = (new Date(config.startDate)).getTime();
+var teams = [];
+for(var i=0;i<config.teams.length;++i){
+  teams[i] = {name:config.teams[i]};
+}
 for(var i=0;i<teams.length;++i){
   teams[i].id = i;
   teams[i].place = 1;
@@ -16,6 +20,28 @@ for(var i=0;i<teams.length;++i){
   for(var j=0;j<taskamount;++j) teams[i].tasks[j] = 0;
   updateTeam(i);
 }
+function formatTime(time){
+  var hours = Math.floor(time/3600);
+  var minutes = Math.floor(time/60)%60;
+  var seconds = Math.floor(time)%60;
+  if(minutes<10) minutes = "0"+minutes;
+  if(seconds<10) seconds = "0"+seconds;
+  return hours+':'+minutes+':'+seconds;
+}
+(function(){
+  console.log("Loaded "+teams.length+" teams:");
+  for(var i=0;i<teams.length;++i) console.log(teams[i].name);
+  console.log("---");
+  console.log("Contest starts at "+config.startDate);
+  var currentTime = (new Date()).getTime();
+  if(currentTime<startTime){
+    console.log("Starts in "+formatTime((startTime-currentTime)/1000))
+  }else{
+    console.log("Contest started "+formatTime((currentTime-startTime)/1000)+" ago")
+  }
+  console.log("Contest duration: "+formatTime(duration));
+  console.log("Registered "+taskamount+" tasks");
+})();
 
 app.use(express.static('public'));
 
