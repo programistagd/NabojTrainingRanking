@@ -1,6 +1,6 @@
 {
-  "teams" : ["FC Barcelona","Real Madryt","Chicago Bulls"],
+  "teams" : ["FC Barcelona","Real Madryt","Chicago Bulls","Cleveland Cavaliers","Seattle Seahawks"],
   "duration" : 7200,
-  "startDate" : "Sun Apr 03 2016 14:30:00 GMT+0200",
+  "startDate" : "Sun Apr 03 2016 17:18:00 GMT+0200",
   "taskAmount" : 50
 }
