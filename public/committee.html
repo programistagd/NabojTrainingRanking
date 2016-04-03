@@ -63,6 +63,9 @@
       socket.on('error',function(){
         fail("Błąd połączenia");
       });
+      socket.on('disconnect',function(){
+        message("Utracono połączenie z serwerem, próbuję je przywrócić",false);
+      });
       socket.on('update_error',function(e){
         fail("Błąd przy aktualizacji zadania! ("+e+")");
       });

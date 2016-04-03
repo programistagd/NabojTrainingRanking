@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Naboj Trening</title>
+    <link rel="stylesheet" href="/bootstrap.min.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/jquery-1.11.1.min.js"></script>
+    <script src="/progressbar.min.js"></script>
+  </head>
+  <body style="margin: 20pt;">
+    <div id="timer_container" style="width: 600px;height: 600px;font-family:Arial;font-size:36pt;"></div>
+    <div id="conn" style="font-size:18pt;">Brak połączenia z serwerem</div>
+    <script>
+      var startDate = (new Date()).getTime()+5*60*1000;
+      var duration = 2*60*60*1000;
+      var socket = io();
+      socket.on('init', function(msg){
+        $("#conn").hide(300);
+        duration = msg.duration*1000;
+        startDate = msg.startTime;
+      });
+      socket.on('error',function(){
+        $("#conn").show(300);
+      });
+      socket.on('disconnect',function(){
+        $("#conn").show(300);
+      });
+      var timer = new ProgressBar.Circle('#timer_container', {
+          color: '#05CC30',
+          strokeWidth: 3,
+          trailWidth: 1,
+          strokeWidth: 10,
+          duration: 490,
+          text: {
+              value: '...',
+              style:{
+                color: '#000',
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                padding: 0,
+                margin: 0,
+                // You can specify styles which will be browser prefixed
+                transform: {
+                    prefix: true,
+                    value: 'translate(-50%, -50%)'
+                }
+              },
+          },
+      });
+      function formatTime(time){
+        var hours = Math.floor(time/3600);
+        var minutes = Math.floor(time/60)%60;
+        var seconds = Math.floor(time)%60;
+        if(minutes<10) minutes = "0"+minutes;
+        if(seconds<10) seconds = "0"+seconds;
+        return hours+':'+minutes+':'+seconds;
+      }
+      setInterval(function(){
+        var current = (new Date()).getTime() - startDate;
+        var timeleft = (duration - current)/1000;
+        if(current<0){
+          timer.set(1);
+          timer.setText("Start za "+formatTime(-current/1000));
+          timer.path.setAttribute('stroke', "#0030FF");
+        }
+        else if(timeleft>=0){
+          timer.setText(formatTime(timeleft));
+          timer.animate(current/duration);
+          if(timeleft<5*60){
+            timer.path.setAttribute('stroke', "#FF6010");
+          }
+          else if(timeleft<30*60){
+            timer.path.setAttribute('stroke', "#FFAA10");
+          }else{
+            timer.path.setAttribute('stroke', "#05CC30");
+          }
+        }else{
+          timer.setText("Koniec czasu!");
+          timer.animate(1);
+          timer.path.setAttribute('stroke', "#FF0000");
+        }
+      },500);
+    </script>
+  </body>
+</html>

@@ -7,8 +7,7 @@
     <script src="/jquery-1.11.1.min.js"></script>
     <script src="/progressbar.min.js"></script>
     <script src="/bootstrap.min.js"></script>
-    <script src="/animator.min.js"></script>
-    <script src="/rankingTableUpdate.js"></script>
+    <script src="/jquery.color-2.1.2.min.js"></script>
     <style>
     .box {
         float: left;
@@ -23,7 +22,7 @@
   </head>
   <body style="margin: 20pt;">
     <div id="timer_container" style="width: 300px;height: 300px;font-family:Arial;font-size:24pt;"></div>
-    <div id="conn" style="float:right;font-size:30pt;">Łączenie z serwerem</div>
+    <div id="conn" style="float:right;font-size:30pt;color:red">Brak połączenia z serwerem</div>
     <br>
     <div style="font-size: 18pt;">
       <table id="ranking" class="table table-striped table-bordered">
@@ -45,38 +44,67 @@
       var duration = 2*60*60*1000;
       var socket = io();
       socket.on('init', function(msg){
-        $("#conn").html("");
+        //$("#conn").html("");
+        $("#conn").hide(1200);
         duration = msg.duration*1000;
         startDate = msg.startTime;
         $(".team_rank").remove();
         var old = $("#ranking");
         var tbl = createTable(msg.teams);
-        console.log(tbl);
         old.replaceWith(tbl);
         //$("#prep").remove();
       });
       socket.on("disconnect",function(){
-        $("#conn").html("Połączenie z serwerem zerwane!!!");
+        //$("#conn").html("Połączenie z serwerem zerwane!!!");
+        $("#conn").show(900);
       });
       socket.on("error",function(){
-        $("#conn").html("Połączenie z serwerem zerwane!!!");
+        //$("#conn").html("Połączenie z serwerem zerwane!!!");
+        $("#conn").show(900);
       });
       socket.on('update_ranking',function(t){
-        /*for(var i=0;i<t.length;++i){
-          $("#t_"+t[i].id).html(innerTeam(t[i]));
-        }*/
-        var old = $("#ranking");
-        var tbl = createTable(t);
+        for(var i=0;i<t.length;++i){
+          if(t[i].movement!=0){
+            //console.log(i,'moved');
+            var old = $("#t_"+t[i].id);
+            old.hide(900,function(){
+              old.remove();
+            });
+            var nowe = $("<tr class='team_rank' id='t_"+t[i].id+"'>"+innerTeam(t[i])+"</tr>");
+            nowe.css("display", "none");
+            var color = (t[i].movement<0)?"green":"red";
+            nowe.css("background-color",color);
+            if(i==0) nowe.prependTo($("#ranking > tbody"));
+            else nowe.insertAfter(t[i-1].nowe);
+            nowe.show(900,function(){
+              //nowe.animate({"background-color":"white"},3000);
+            });
+            nowe.animate({"background-color":""},1400,"swing",function(){
+
+            });
+            t[i].nowe = nowe;
+            //.html(innerTeam(t[i]));
+          }
+          else{
+            t[i].nowe = $("#t_"+t[i].id);
+            t[i].nowe.html(innerTeam(t[i]));
+          }
+        }
+        //var old = $("#ranking");
+        //var tbl = createTable(t);
         //console.log(tbl);
-        //old.rankingTableUpdate(tbl);
-        old.replaceWith(tbl);
+        //old.replaceWith(tbl);
       });
       function createTable(teams){
         var tbl = $('<table id="ranking" class="table table-striped table-bordered"><thead><tr><td class="col-md-1">Miejsce</td><td class="col-md-2">Drużyna</td><td class="col-md-1">Punkty</td><td class="col-md-8">Zadania</td></tr></thead><tbody></tbody></table>');
         for(var i=0;i<teams.length;++i){
           var team = teams[i];
           console.log(team);
-          addTeam(tbl,team);
+          //addTeam(tbl.find('tr:last'),team);
+          var nowe = $("<tr class='team_rank' id='t_"+team.id+"'>"+innerTeam(team)+"</tr>");
+          nowe.css("display", "none");
+          nowe.appendTo(tbl.find('tbody'));
+          nowe.show(500);
         }
         return tbl;
       }
@@ -94,11 +122,11 @@
       function innerTeam(team){
         return "<td class='anim:position'>"+team.place+"</td><td class='anim:id'>"+team.name+"</td><td>"+team.score+"</td><td>"+prepareHTMLTasks(team.tasks)+"</td>";
       }
-      function addTeam(tbl,team){
+      /*function addTeam(afterTeam,team){
         //tbl.find('tr:last').after("<tr class='team_rank' id='t_"+team.id+"'>"+innerTeam(team)+"</tr>");
-        tbl.find('tr:last').after("<tr class='team_rank' id='t_"+team.id+"'>"+innerTeam(team)+"</tr>");
+        afterTeam.after("<tr class='team_rank' id='t_"+team.id+"'>"+innerTeam(team)+"</tr>");
         //console.log(tbl.find('ranking tr:last'));
-      }
+      }*/
       var timer = new ProgressBar.Circle('#timer_container', {
           color: '#05CC30',
           strokeWidth: 3,

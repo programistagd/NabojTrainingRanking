@@ -12,6 +12,7 @@ for(var i=0;i<teams.length;++i){
   teams[i].place = 1;
   teams[i].score = 0;
   teams[i].tasks = [];
+  teams[i].movement = 0;
   for(var j=0;j<taskamount;++j) teams[i].tasks[j] = 0;
   updateTeam(i);
 }
@@ -76,11 +77,20 @@ function compare(a,b) {
     return 0;
 }
 function updateRanking(){
+  for(var i=0;i<teams.length;++i){
+    teams[i].oldplace = i;
+  }
   teams.sort(compare);
   teams[0].place = 1;
   for(var i=1;i<teams.length;++i){
     if(teams[i].score==teams[i-1].score) teams[i].place = teams[i-1].place;
     else teams[i].place = teams[i-1].place+1;
+  }
+  for(var i=0;i<teams.length;++i){
+    var dp = i - teams[i].oldplace;
+    if(dp>0) dp=1;
+    if(dp<0) dp=-1;
+    teams[i].movement = dp;
   }
   io.emit('update_ranking',teams);
 }
