@@ -1,0 +1,3 @@
+A ranking table, timer and ranking updater system for a local training for https://math.naboj.org/
+
+Uses node.js (with express) for backend, socket.io for connection and Bootstrap, jQuery and ProgressBar.js for presentation.
