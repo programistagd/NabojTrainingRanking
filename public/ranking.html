@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>Naboj Trening</title>
+    <title>Ranking</title>
     <link rel="stylesheet" href="/bootstrap.min.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="/jquery-1.11.1.min.js"></script>
@@ -67,7 +67,7 @@
           if(t[i].movement!=0){
             //console.log(i,'moved');
             var old = $("#t_"+t[i].id);
-            old.hide(500,function(){
+            old.hide(100,function(){
               old.remove();
             });
             var nowe = $("<tr class='team_rank' id='t_"+t[i].id+"'>"+innerTeam(t[i])+"</tr>");

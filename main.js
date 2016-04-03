@@ -3,6 +3,54 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var config = require('./config.json')
+var Db = require('tingodb')().Db;
+
+var db = new Db('./database.db', {});
+var backup = db.collection('results', function(err, collection) {
+  if(err){
+    console.log(err);
+    console.log("Database may not work. Be warned that you may not have a backup in case of crash!");
+  }
+  else{
+    var amnt = 0;
+    backup.find().each(function(err,doc) {
+      if(!doc){
+        updateRanking();
+        console.log("Loaded "+amnt+" teams from backup");
+        return;
+      }
+      if(err){
+        //console.log("Error loading backup!");
+        console.log(err);
+        return;
+      }
+      var id = doc.id;
+      //console.log(doc);
+      if(id<0 || id>=teams.length || doc.tasks.length != taskamount){
+        console.log("Incompatible update data ",doc);
+        return;
+      }
+      var idd=id;
+      if(teams[idd].id!=id){
+          for(var i=0;i<teams.length;++i){
+            if(teams[i].id==id){
+              idd=i;
+              break;
+            }
+          }
+      }
+      if(teams[idd].id!=id){
+        console.log("Error: this shouldn't happen");
+        return;
+      }
+      teams[idd].tasks = doc.tasks;
+      teams[idd].lastUpdated = doc.lastUpdated;
+      updateTeam(idd);
+      amnt++;
+      console.log("Loaded "+teams[idd].name+"("+teams[idd].id+"/"+doc.id+")");
+    });
+  }
+});
 
 var taskamount = config.taskAmount;
 var duration = config.duration;
@@ -17,9 +65,11 @@ for(var i=0;i<teams.length;++i){
   teams[i].score = 0;
   teams[i].tasks = [];
   teams[i].movement = 0;
+  teams[i].lastUpdated = (new Date());
   for(var j=0;j<taskamount;++j) teams[i].tasks[j] = 0;
   updateTeam(i);
 }
+updateRanking();
 function formatTime(time){
   var hours = Math.floor(time/3600);
   var minutes = Math.floor(time/60)%60;
@@ -63,15 +113,27 @@ io.on('connection', function(socket){
       socket.emit('update_error',"t"+t);
       return;
     }
-    var idd = 0;
+    var idd = id;
     for(var i=0;i<teams.length;++i) if(teams[i].id==id){
       idd=i;
       break;
     }
     teams[idd].tasks[t] = upd.state;
+    if(upd.state>0){
+      teams[idd].lastUpdated = new Date();
+    }
     updateTeam(idd);
-    updateRanking();
-    socket.emit('update_success',upd);
+    //save to backup
+    var bak = {id:teams[idd].id,tasks:teams[idd].tasks,lastUpdated:teams[idd].lastUpdated};
+    backup.update({id:teams[idd].id},bak,{upsert:true},function(err){
+      if(err){
+        console.log("ERROR saving updated tasks to backup")
+      }else{
+        console.log("Saved "+teams[idd].name+"("+teams[idd].id+"/"+bak.id+")");
+      }
+      updateRanking();
+      socket.emit('update_success',upd);
+    });
   });
 });
 function updateTeam(id){
@@ -99,8 +161,17 @@ function compare(a,b) {
     return 1;
   else if (a.score > b.score)
     return -1;
-  else
-    return 0;
+  else{
+    if(a.lastUpdated < b.lastUpdated){
+      return -1;
+    }
+    else if(a.lastUpdated > b.lastUpdated){
+      return 1;
+    }
+    else {
+        return 0;
+    }
+  }
 }
 function updateRanking(){
   for(var i=0;i<teams.length;++i){
